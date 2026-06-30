@@ -1,0 +1,2 @@
+-- Add an index that lets Postgres satisfy both the WHERE and the
+-- ORDER BY ... LIMIT without a separate Sort step. See README.md.
