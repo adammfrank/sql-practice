@@ -1,0 +1,3 @@
+-- No indexes needed for this lesson. orders.status has no index in the
+-- fresh per-test database, which is the point: you're about to see what
+-- a full-table scan looks like in EXPLAIN output.
