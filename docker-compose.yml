@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dojo
+      POSTGRES_PASSWORD: dojo
+      POSTGRES_DB: postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - dojo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dojo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  dojo_pgdata:
