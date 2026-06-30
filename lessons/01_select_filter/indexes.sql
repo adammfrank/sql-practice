@@ -1,0 +1,3 @@
+-- No indexes needed for this lesson. The gate here is correctness only
+-- (no plan or speed assertion) -- this is a JOIN/WHERE/GROUP BY refresher,
+-- not an indexing exercise yet. Indexing starts in a later lesson.
