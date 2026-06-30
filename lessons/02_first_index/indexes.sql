@@ -1,0 +1,2 @@
+-- Add the index that lets Postgres find a customer's orders without
+-- scanning the whole `orders` table. See README.md for the goal.
