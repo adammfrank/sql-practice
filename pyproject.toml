@@ -15,7 +15,7 @@ dev = ["pytest>=8.0"]
 [tool.pytest.ini_options]
 testpaths = ["tests", "lessons"]
 python_files = ["test_*.py", "test_lesson.py"]
-addopts = "-ra"
+addopts = "-ra --import-mode=importlib"
 
 [tool.setuptools]
 packages = ["dojo"]
