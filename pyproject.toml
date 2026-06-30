@@ -1,0 +1,25 @@
+[project]
+name = "sql-performance-dojo"
+version = "0.1.0"
+description = "A pytest-graded PostgreSQL course on performance and indexing"
+requires-python = ">=3.11"
+dependencies = [
+    "psycopg[binary]>=3.1",
+    "faker>=24.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "lessons"]
+python_files = ["test_*.py", "test_lesson.py"]
+addopts = "-ra"
+
+[tool.setuptools]
+packages = ["dojo"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
