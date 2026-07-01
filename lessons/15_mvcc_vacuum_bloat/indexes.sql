@@ -1,0 +1,2 @@
+-- No index is needed for this lesson. The problem is dead-tuple bloat from
+-- an UPDATE, not a missing index. Leave this file empty.
