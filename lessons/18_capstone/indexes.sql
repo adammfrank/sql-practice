@@ -1,0 +1,16 @@
+-- TODO: create the indexes your solution needs.
+--
+-- The report touches four tables. Three of them are large (orders 500K,
+-- order_items 1M, reviews 1M) and the naive query Seq-Scans all of them.
+-- Foreign-key columns are NOT indexed automatically in PostgreSQL, so the
+-- join columns start out unindexed. Think about:
+--   - finding the paid orders in the recent window without scanning all
+--     500K orders (a composite index on the filter columns),
+--   - fetching the order_items for just those orders without scanning all
+--     1M rows (index the FK join column; a covering INCLUDE can make it an
+--     index-only scan),
+--   - counting reviews for the final top-10 products without scanning all
+--     1M reviews (index the reviews FK column).
+--
+-- The gate requires NO Seq Scan on orders, order_items, or reviews. (A
+-- Seq Scan on the tiny products table is fine and often optimal.)
