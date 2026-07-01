@@ -1,0 +1,2 @@
+-- Add a BRIN index on `events.ts`. See README.md for why BRIN (not a
+-- B-tree) is the right tool for this naturally time-ordered, huge table.
