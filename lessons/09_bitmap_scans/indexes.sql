@@ -1,0 +1,3 @@
+-- Add two separate single-column indexes (not one composite index) so
+-- the planner can combine them with a BitmapAnd. See README.md for why
+-- two single-column indexes are the point of this lesson.
