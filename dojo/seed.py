@@ -1,5 +1,6 @@
 # dojo/seed.py
-import io
+import datetime as dt
+import json
 import random
 import time
 from pathlib import Path
@@ -80,11 +81,9 @@ def generate(conn, rng: random.Random, fake: Faker):
     conn.commit()
 
 def _ts(epoch_seconds: int) -> str:
-    import datetime as dt
     return dt.datetime.fromtimestamp(epoch_seconds, tz=dt.timezone.utc).isoformat()
 
 def _json(obj) -> str:
-    import json
     return json.dumps(obj)
 
 def main():
