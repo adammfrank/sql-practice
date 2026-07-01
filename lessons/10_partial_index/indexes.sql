@@ -1,0 +1,3 @@
+-- Add a partial index that only covers rows with status = 'pending'.
+-- See README.md for why a partial index (not a full index on `status`)
+-- is the point of this lesson.
