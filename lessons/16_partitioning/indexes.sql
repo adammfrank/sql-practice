@@ -1,0 +1,2 @@
+-- TODO: Create a partitioned copy of `events`, by month, and populate it.
+-- See README.md.
