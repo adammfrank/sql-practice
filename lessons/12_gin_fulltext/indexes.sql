@@ -1,0 +1,3 @@
+-- Add a GIN index over a tsvector expression so full-text search on
+-- `reviews.body` doesn't have to re-tokenize every row on every query.
+-- See README.md.
