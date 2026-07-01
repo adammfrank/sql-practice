@@ -1,0 +1,2 @@
+-- TODO: Create a materialized view that precomputes the per-category
+-- revenue aggregate, plus an index on it. See README.md.
