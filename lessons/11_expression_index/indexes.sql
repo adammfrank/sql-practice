@@ -1,0 +1,2 @@
+-- Add an index on an EXPRESSION (not a plain column) so a case-insensitive
+-- lookup on `email` can use an index. See README.md.
