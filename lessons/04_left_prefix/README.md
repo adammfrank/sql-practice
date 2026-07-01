@@ -59,16 +59,18 @@ Then write the query in `solution.sql`.
 ## 5. The gate
 
 Correctness, plan (no `Seq Scan`, must use `idx_orders_status`), and a
-speedup over the no-index baseline. The required ratio here (1.5x) is
-much lower than earlier lessons. `status` has only four distinct
-values, and `'shipped'` matches roughly 83,000 of the 500,000 rows
-(~17%) — not very selective. A `Bitmap Index Scan` over that many
-matching rows still has to fetch a large fraction of the table's pages,
-so it only modestly beats a `Seq Scan`, not dramatically. That's a
-real, useful lesson on its own: **indexes help most when the predicate
-is selective; on a low-cardinality column matched against a large
-fraction of rows, the win shrinks** — Postgres may even choose a
-`Seq Scan` over the index for a less selective value than `'shipped'`.
+speedup over the no-index baseline. The **plan check is the real gate
+here** — it's what forces you to build the right index. The required
+ratio (1.5x) is much lower than earlier lessons and is only a secondary
+sanity floor. `status` has only four distinct values, and `'shipped'`
+matches roughly 83,000 of the 500,000 rows (~17%) — not very selective.
+A `Bitmap Index Scan` over that many matching rows still has to fetch a
+large fraction of the table's pages, so it only modestly beats a
+`Seq Scan` (measured ~1.5x on the seeded data, ~26ms → ~16ms), not
+dramatically. That's a real, useful lesson on its own: **indexes help
+most when the predicate is selective; on a low-cardinality column
+matched against a large fraction of rows, the win shrinks** — Postgres
+may even choose a `Seq Scan` over the index for a less selective value.
 
 ## 6. The teaching point
 
