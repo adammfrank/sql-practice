@@ -1,0 +1,2 @@
+-- Add a GIN index over the jsonb column so containment (`@>`) queries
+-- against `products.attributes` don't need a full scan. See README.md.
