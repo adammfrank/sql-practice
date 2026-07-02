@@ -10,22 +10,13 @@ both ends of that decision using one join: `orders` ⋈ `order_items`.
 ## 1. Part A — an unselective join gets a Hash Join
 
 Suppose you want total item value per order status, across the whole
-table:
-
-```sql
-SELECT o.status, sum(oi.quantity * oi.price) AS total_value
-FROM orders o
-JOIN order_items oi ON oi.order_id = o.id
-GROUP BY o.status;
-```
+table: join `orders` to `order_items` on `order_items.order_id =
+orders.id`, and for each `orders.status` sum `quantity * price` across
+its line items.
 
 There's no selective filter here — every row of both tables
-participates. Run this yourself (no indexes needed) and look at the
-plan:
-
-```bash
-psql -c "EXPLAIN ANALYZE SELECT o.status, sum(oi.quantity * oi.price) AS total_value FROM orders o JOIN order_items oi ON oi.order_id = o.id GROUP BY o.status;"
-```
+participates. Run that query yourself under `EXPLAIN ANALYZE` (no
+indexes needed) and look at the plan.
 
 You should see a **Hash Join**: Postgres builds an in-memory hash
 table from the smaller side (`orders`, keyed on `id`) and then
@@ -46,15 +37,9 @@ Hash Join node but with multiple batches — still correct, just slower.
 
 Now narrow the query to one customer's orders and their line items —
 the kind of query a customer-facing "order history" page runs
-constantly:
-
-```sql
-SELECT o.id, sum(oi.quantity * oi.price) AS total_items_value
-FROM orders o
-JOIN order_items oi ON oi.order_id = o.id
-WHERE o.customer_id = 4242
-GROUP BY o.id;
-```
+constantly: the same `orders`/`order_items` join, but filtered to
+`orders.customer_id = 4242` and grouped by `orders.id`, summing
+`quantity * price` per order.
 
 Customer 4242 has about a dozen orders out of 500,000. This is a
 completely different shape of problem: instead of "touch everything,"

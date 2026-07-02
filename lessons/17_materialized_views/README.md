@@ -8,17 +8,12 @@ copy** — at the cost of that copy going stale until you refresh it.
 
 ## 1. The problem
 
-Recall lesson 01's aggregate — total revenue per product category,
-for paid orders:
-
-```sql
-SELECT p.category, SUM(oi.quantity * oi.price) AS revenue
-FROM order_items oi
-JOIN orders o ON o.id = oi.order_id
-JOIN products p ON p.id = oi.product_id
-WHERE o.status = 'paid'
-GROUP BY p.category;
-```
+Recall lesson 01's aggregate — total revenue per product category, for
+paid orders: join `order_items` to `orders` (on `orders.id =
+order_items.order_id`) and to `products` (on `products.id =
+order_items.product_id`), keep only rows where `orders.status =
+'paid'`, and for each `products.category` sum `quantity * price` as the
+revenue.
 
 This has to join and aggregate across roughly a million `order_items`
 rows every single time it runs. No index rescues that fundamentally —
@@ -35,8 +30,8 @@ as if it were a real table. You create one with the form
 and give it the paid-revenue-per-category query from section 1 as its
 body.
 
-Once created, `mv_cat_revenue` is queryable exactly like a table —
-`SELECT category, revenue FROM mv_cat_revenue;` — and returns
+Once created, `mv_cat_revenue` is queryable exactly like a table — a
+plain `SELECT` of `category` and `revenue` from it — and returns
 instantly, because it's just reading six already-computed rows off
 disk, not touching `order_items`, `orders`, or `products` at all.
 
@@ -61,11 +56,8 @@ of recomputing the aggregate.
 
 The catch: `mv_cat_revenue` is a snapshot. If new orders get marked
 `'paid'` after you create it, the materialized view's rows don't
-update on their own — you have to explicitly refresh it:
-
-```sql
-REFRESH MATERIALIZED VIEW mv_cat_revenue;
-```
+update on their own — you have to explicitly refresh it with a
+`REFRESH MATERIALIZED VIEW` on `mv_cat_revenue`.
 
 Plain `REFRESH` recomputes the whole thing and — importantly — takes
 an exclusive lock on the materialized view for the duration, meaning

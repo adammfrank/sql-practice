@@ -12,11 +12,9 @@ every time.
 
 ## 1. The problem
 
-```sql
-SELECT id
-FROM reviews
-WHERE to_tsvector('english', body) @@ plainto_tsquery('english', 'dog');
-```
+Return the `id`s of `reviews` whose `body`, tokenized with
+`to_tsvector('english', body)`, matches the full-text query
+`plainto_tsquery('english', 'dog')` — joined by the `@@` match operator.
 
 A note on the search term: this course's seed data (`dojo/seed.py`)
 fills `reviews.body` with `Faker`-generated Latin lorem-ipsum

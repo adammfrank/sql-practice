@@ -8,9 +8,7 @@ existing index turns out not to help.
 
 ## 1. The problem
 
-```sql
-SELECT id FROM orders WHERE status = 'shipped';
-```
+Return the `id`s of `orders` where `status = 'shipped'`.
 
 ## 2. Why `idx_orders_cust_status` doesn't help
 

@@ -6,9 +6,8 @@ adds a second condition and asks: what index actually helps now?
 
 ## 1. The problem
 
-```sql
-SELECT id FROM orders WHERE customer_id = 4242 AND status = 'paid';
-```
+Return the `id`s of `orders` matching both `customer_id = 4242` **and**
+`status = 'paid'`.
 
 This is the previous lesson's predicate (`customer_id = 4242`, ~10
 rows out of 500,000) narrowed further by `status = 'paid'` (roughly

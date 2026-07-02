@@ -8,11 +8,8 @@ day looking up one customer's orders.
 
 ## 1. The problem
 
-Write a query that returns a customer's orders:
-
-```sql
-SELECT id, total, created_at FROM orders WHERE customer_id = 4242;
-```
+Write a query that returns a customer's orders — selecting `id`,
+`total`, and `created_at` from `orders` for `customer_id = 4242`.
 
 `customer_id` ranges from 1 to 50,000, spread roughly evenly across
 500,000 orders — so this customer has on the order of 10 matching rows
@@ -28,9 +25,8 @@ to the matching rows.
 2. Open `solution.sql` and write the query above (or copy it — the
    point of this lesson is the index, not the SQL).
 
-Write the `CREATE INDEX` statement yourself — the shape is
-"`CREATE INDEX <name> ON <table> (<column>)`", and step 1 tells you the
-name, table, and column to fill in.
+Write the `CREATE INDEX` statement yourself — step 1 gives you the
+name, table, and column it needs.
 
 ## 3. Run it
 

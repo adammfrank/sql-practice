@@ -20,11 +20,9 @@ orders with status `'paid'`**.
 
 Relevant tables (see `dojo/schema.sql` for full definitions):
 
-```sql
-orders(id, customer_id, status, total, created_at)
-order_items(id, order_id, product_id, quantity, price)
-products(id, name, category, price, description, attributes)
-```
+- `orders` — `id`, `customer_id`, `status`, `total`, `created_at`
+- `order_items` — `id`, `order_id`, `product_id`, `quantity`, `price`
+- `products` — `id`, `name`, `category`, `price`, `description`, `attributes`
 
 Your result should have one row per distinct `category` with columns
 `(category, revenue)`. Row order doesn't matter — the gate compares
@@ -32,13 +30,8 @@ results as sets, not sequences.
 
 ## 2. Where to write your answer
 
-Open `solution.sql`. It currently contains a placeholder:
-
-```sql
-SELECT 1;
-```
-
-Replace it with your query. Don't edit `expected.sql` — that's the
+Open `solution.sql`. It currently contains a placeholder that just
+selects the constant `1`. Replace it with your query. Don't edit `expected.sql` — that's the
 answer key the gate checks you against, not something you're meant to
 read before attempting the problem yourself (though nothing stops you;
 this is a refresher, not a trick).

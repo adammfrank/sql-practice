@@ -23,19 +23,13 @@ still occupy space in the table's heap until something reclaims them.
 ## 2. The problem
 
 This lesson's test simulates a common operational event: a bulk
-`UPDATE` touches half a million rows in `events`.
-
-```sql
-UPDATE events SET payload = payload || '{"v":1}'::jsonb WHERE id <= 500000;
-```
+`UPDATE` touches half a million rows in `events` — it appends a small
+key onto each row's `payload` JSONB for every `id <= 500000`.
 
 Every one of those 500,000 rows now has two versions on disk: the old
 (dead) one and the new (live) one. Nothing has reclaimed the dead
-versions yet. You can see this directly:
-
-```sql
-SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'events';
-```
+versions yet. You can see this directly by selecting `n_live_tup` and
+`n_dead_tup` from `pg_stat_user_tables` for `relname = 'events'`.
 
 `n_dead_tup` will read roughly 500,000. Those dead tuples aren't free:
 they bloat the table's on-disk size (`pg_relation_size('events')`
@@ -52,11 +46,8 @@ automatically, once enough of a table has changed
 Most of the time you never think about this — it Just Works.
 
 This lesson's test setup deliberately disables autovacuum on the
-`events` table first:
-
-```sql
-ALTER TABLE events SET (autovacuum_enabled = false);
-```
+`events` table first, via an `ALTER TABLE` that sets the table's
+`autovacuum_enabled` storage parameter to false.
 
 Why? So the measurement is deterministic. If autovacuum were left on,
 it might (or might not) fire mid-test and clean up the dead tuples for
@@ -67,11 +58,8 @@ reliable.
 
 ## 4. What to do
 
-In `solution.sql`, reclaim the dead tuples with `VACUUM`:
-
-```sql
-VACUUM events;
-```
+In `solution.sql`, reclaim the dead tuples by running `VACUUM` on the
+`events` table.
 
 `VACUUM` scans the table, identifies dead tuples that no active
 transaction could still need to see, and marks their space as
@@ -93,7 +81,7 @@ require them here:
 
 - **`fillfactor`**: a per-table storage parameter (default 100, i.e.
   fully packed) that tells Postgres to leave some free space in each
-  page when writing rows: `ALTER TABLE events SET (fillfactor = 90);`
+  page when writing rows — e.g. setting the table's `fillfactor` to 90
   reserves 10% free space per page. That reserved space gives
   **HOT updates** (Heap-Only Tuples) somewhere to put the new row
   version *on the same page* as the old one, when the update doesn't
