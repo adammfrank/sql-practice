@@ -13,8 +13,8 @@ checks your work for correctness, query plan shape, and speed.
 ## Setup
 
 ```bash
-python -m venv .venv
-.venv/Scripts/pip install -e ".[dev]"
+uv venv
+uv pip install -e ".[dev]"
 cp .env.example .env
 make up          # or: docker compose up -d
 make seed        # generates ~5.5M rows into dojo_template; takes ~1-2 min
@@ -38,7 +38,7 @@ Each lesson lives in `lessons/NN_<name>/`:
 4. Run the lesson's tests:
 
    ```bash
-   .venv/Scripts/pytest lessons/NN_<name>
+   uv run pytest lessons/NN_<name>
    ```
 
 Note: running bare `pytest` (or `make test`) runs the **entire** suite,

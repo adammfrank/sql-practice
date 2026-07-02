@@ -4,6 +4,6 @@ up:
 down:
 	docker compose down
 seed:
-	.venv/Scripts/python -m dojo.seed
+	uv run python -m dojo.seed
 test:
-	.venv/Scripts/pytest
+	uv run --extra dev pytest
