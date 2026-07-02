@@ -28,11 +28,9 @@ to the matching rows.
 2. Open `solution.sql` and write the query above (or copy it — the
    point of this lesson is the index, not the SQL).
 
-`CREATE INDEX` syntax, if you need the reminder:
-
-```sql
-CREATE INDEX idx_orders_customer ON orders (customer_id);
-```
+Write the `CREATE INDEX` statement yourself — the shape is
+"`CREATE INDEX <name> ON <table> (<column>)`", and step 1 tells you the
+name, table, and column to fill in.
 
 ## 3. Run it
 

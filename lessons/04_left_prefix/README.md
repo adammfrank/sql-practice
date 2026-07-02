@@ -36,11 +36,8 @@ correct query in `solution.sql`, and check the plan: you'll see a
 
 ## 3. What to do
 
-Add a second index in `indexes.sql`, on `status` alone:
-
-```sql
-CREATE INDEX idx_orders_status ON orders (status);
-```
+Add a second index in `indexes.sql`, on `status` alone — name it
+`idx_orders_status`.
 
 Keep the existing `idx_orders_cust_status` line in place — you're
 **adding** an index, not replacing the old one. (In a real system

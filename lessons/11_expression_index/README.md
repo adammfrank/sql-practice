@@ -24,12 +24,9 @@ every row, lower-case its email, and compare.
 
 ## 2. What to do
 
-In `indexes.sql`, index the *expression* `lower(email)`, not the bare
-column:
-
-```sql
-CREATE INDEX idx_customers_lower_email ON customers(lower(email));
-```
+In `indexes.sql`, create an index named `idx_customers_lower_email` on
+`customers`, over the *expression* `lower(email)` rather than the bare
+`email` column.
 
 Then write the query above into `solution.sql`.
 

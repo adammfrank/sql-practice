@@ -65,11 +65,8 @@ lookups is wasteful.
 ## 3. What to do
 
 In `indexes.sql`, add indexes on both join-relevant lookup columns:
-
-```sql
-CREATE INDEX idx_orders_customer_id ON orders (customer_id);
-CREATE INDEX idx_order_items_order_id ON order_items (order_id);
-```
+`idx_orders_customer_id` on `orders (customer_id)`, and
+`idx_order_items_order_id` on `order_items (order_id)`.
 
 - `idx_orders_customer_id` lets Postgres jump straight to customer
   4242's orders instead of scanning the whole `orders` table.

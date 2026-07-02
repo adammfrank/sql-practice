@@ -23,11 +23,9 @@ sort them by `created_at DESC`, and keep the top 10.
 
 ## 2. What to do
 
-Create a composite index on `(customer_id, created_at DESC)`:
-
-```sql
-CREATE INDEX idx_orders_cust_created ON orders (customer_id, created_at DESC);
-```
+Create a composite index named `idx_orders_cust_created` on `orders`,
+over `customer_id` first, then `created_at` — and store that second
+column in **descending** order.
 
 The column order matters in two ways here, stacking on what you
 learned in lesson 03/04:

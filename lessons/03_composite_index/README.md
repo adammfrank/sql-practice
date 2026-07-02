@@ -17,13 +17,9 @@ half of all orders are `'paid'`, the rest split across `pending`,
 
 ## 2. What to do
 
-1. In `indexes.sql`, create **one composite index** on both columns,
-   in this order:
-
-   ```sql
-   CREATE INDEX idx_orders_cust_status ON orders (customer_id, status);
-   ```
-
+1. In `indexes.sql`, create **one composite index** named
+   `idx_orders_cust_status` on `orders`, over both columns in this
+   order: `customer_id` first, then `status`.
 2. In `solution.sql`, write the query above.
 
 ## 3. Why one composite index, not two single-column indexes

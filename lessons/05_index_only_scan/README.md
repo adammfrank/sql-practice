@@ -22,12 +22,9 @@ still have to visit the heap for every row just to read `total`.
 
 ## 2. What to do
 
-In `indexes.sql`, create an index on `customer_id` that also *carries*
-`total` as a non-key payload column, using `INCLUDE`:
-
-```sql
-CREATE INDEX idx_orders_cust_incl ON orders (customer_id) INCLUDE (total);
-```
+In `indexes.sql`, create an index named `idx_orders_cust_incl` on
+`customer_id` that also *carries* `total` as a non-key payload column,
+using an `INCLUDE` clause.
 
 `INCLUDE` columns aren't part of the B-tree search key (you still
 can't search by `total` with this index) — they're just extra data

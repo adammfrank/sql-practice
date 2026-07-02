@@ -54,11 +54,7 @@ They will disagree substantially.
 ## 2. What to do
 
 In `solution.sql`, tell Postgres to recompute statistics for the
-table that changed:
-
-```sql
-ANALYZE orders;
-```
+table that changed — the `ANALYZE` command, pointed at `orders`.
 
 That's it — `ANALYZE` samples the table's rows and rebuilds the
 per-column statistics (most common values and their frequencies,

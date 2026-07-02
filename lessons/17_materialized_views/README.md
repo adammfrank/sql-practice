@@ -30,19 +30,12 @@ changes when new orders are paid.
 ## 2. Materialized views
 
 A **materialized view** runs a query once and stores its result set
-as if it were a real table:
+as if it were a real table. You create one with the form
+`CREATE MATERIALIZED VIEW <name> AS <query>` — name it `mv_cat_revenue`
+and give it the paid-revenue-per-category query from section 1 as its
+body.
 
-```sql
-CREATE MATERIALIZED VIEW mv_cat_revenue AS
-SELECT p.category, SUM(oi.quantity * oi.price) AS revenue
-FROM order_items oi
-JOIN orders o ON o.id = oi.order_id
-JOIN products p ON p.id = oi.product_id
-WHERE o.status = 'paid'
-GROUP BY p.category;
-```
-
-After this runs, `mv_cat_revenue` is queryable exactly like a table —
+Once created, `mv_cat_revenue` is queryable exactly like a table —
 `SELECT category, revenue FROM mv_cat_revenue;` — and returns
 instantly, because it's just reading six already-computed rows off
 disk, not touching `order_items`, `orders`, or `products` at all.
@@ -52,14 +45,10 @@ just a saved query text — querying it still re-runs the underlying
 join and aggregation every time. A materialized view actually stores
 the *result*.
 
-You can index a materialized view like any table:
-
-```sql
-CREATE UNIQUE INDEX ON mv_cat_revenue (category);
-```
-
-A unique index isn't just a lookup optimization here — it's a
-prerequisite for one specific refresh mode, covered next.
+You can index a materialized view like any table — and here you'll want
+a **unique** index on its `category` column (a `CREATE UNIQUE INDEX`).
+That isn't just a lookup optimization: it's a prerequisite for one
+specific refresh mode, covered next.
 
 ## 3. What to do
 

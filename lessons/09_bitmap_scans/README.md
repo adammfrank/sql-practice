@@ -41,12 +41,8 @@ but neither condition alone narrows things down much.
 ## 2. What to do
 
 In `indexes.sql`, create **two separate single-column indexes** —
-deliberately not a composite one this time:
-
-```sql
-CREATE INDEX idx_orders_status ON orders (status);
-CREATE INDEX idx_orders_created_at ON orders (created_at);
-```
+deliberately not a composite one this time: `idx_orders_status` on
+`status`, and `idx_orders_created_at` on `created_at`.
 
 Then write the query above into `solution.sql`.
 

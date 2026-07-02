@@ -28,11 +28,8 @@ day's worth of rows (~86,400, one per second).
 
 ## 2. What to do
 
-In `indexes.sql`, add a BRIN index on `ts`:
-
-```sql
-CREATE INDEX idx_events_ts_brin ON events USING brin (ts);
-```
+In `indexes.sql`, add a BRIN index named `idx_events_ts_brin` on
+`events`, over the `ts` column — use a `USING brin (...)` clause.
 
 Then write the query above into `solution.sql`.
 

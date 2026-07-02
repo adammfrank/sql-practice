@@ -25,12 +25,9 @@ against the ~84,000 `pending` ones.
 
 ## 2. What to do
 
-In `indexes.sql`, create a **partial index**: a B-tree that only
-covers rows matching `status = 'pending'`.
-
-```sql
-CREATE INDEX idx_orders_pending ON orders(id) WHERE status='pending';
-```
+In `indexes.sql`, create a **partial index** named `idx_orders_pending`:
+a B-tree on `orders(id)` with its own `WHERE` clause that limits it to
+rows matching `status = 'pending'`.
 
 Note the index is on `id` (not `status`) — once the `WHERE` clause has
 already narrowed things down to pending orders, there's nothing left

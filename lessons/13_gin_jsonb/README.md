@@ -32,11 +32,9 @@ different kind of predicate.
 
 ## 2. What to do
 
-In `indexes.sql`, build a GIN index over the whole `jsonb` column:
-
-```sql
-CREATE INDEX idx_products_attrs ON products USING gin (attributes);
-```
+In `indexes.sql`, build a GIN index named `idx_products_attrs` on
+`products`, over the whole `attributes` `jsonb` column — use a
+`USING gin (...)` clause.
 
 Then write the query above into `solution.sql`.
 

@@ -31,44 +31,38 @@ that to *part* of a plain table.
 Postgres lets you declare a table as partitioned **by range** (there's
 also list and hash partitioning) on one or more columns, then attach
 child tables ("partitions") that each own a specific range of key
-values:
+values. The syntax pieces you'll assemble yourself:
 
-```sql
-CREATE TABLE events_part (
-    id bigint NOT NULL,
-    customer_id bigint,
-    event_type text,
-    payload jsonb,
-    ts timestamptz NOT NULL
-) PARTITION BY RANGE (ts);
+- **Declare the parent** with a `PARTITION BY RANGE (ts)` clause on the
+  `CREATE TABLE`. Give it the same columns as `events` (`id bigint`,
+  `customer_id bigint`, `event_type text`, `payload jsonb`,
+  `ts timestamptz`). The parent holds **no rows itself**.
+- **Attach each child** with `CREATE TABLE <child> PARTITION OF
+  <parent> FOR VALUES FROM (<low>) TO (<high>)`. The bounds are a
+  half-open range — `[low, high)`, low included, high excluded — so
+  adjacent partitions share a boundary value without overlapping.
 
-CREATE TABLE events_p_2023_10 PARTITION OF events_part
-    FOR VALUES FROM ('2023-10-01') TO ('2023-11-01');
+The parent holds no rows directly — every row you insert into it is
+routed, automatically, to whichever child partition's range covers that
+row's `ts`. Each partition is a completely ordinary table under the
+hood, with its own storage, and can even have its own indexes.
 
-CREATE TABLE events_p_2023_11 PARTITION OF events_part
-    FOR VALUES FROM ('2023-11-01') TO ('2023-12-01');
-```
-
-`events_part` itself holds no rows directly — every row you insert
-into it is routed, automatically, to whichever child partition's range
-covers that row's `ts`. Each partition is a completely ordinary table
-under the hood, with its own storage, and can even have its own
-indexes.
-
-Populate it from the original table:
-
-```sql
-INSERT INTO events_part SELECT * FROM events;
-```
+Populate the parent from the original table with an `INSERT ... SELECT`
+out of `events`; the inserts get routed to the right child partition
+automatically.
 
 ## 3. What to do
 
-In `indexes.sql`, write the full DDL above: `CREATE TABLE events_part
-... PARTITION BY RANGE (ts)`, two monthly partitions covering the
-data's full range (2023-10 and 2023-11), and the `INSERT ... SELECT`
-to populate it. (This is DDL/backfill, not a query — `indexes.sql`
-runs once, before your `solution.sql`, exactly like every earlier
-lesson's index-creation step; it's just heavier this time.)
+In `indexes.sql`, write the partitioning DDL yourself, following the
+pieces described above: a parent table named `events_part` declared
+`PARTITION BY RANGE (ts)`; two monthly partitions named
+`events_p_2023_10` and `events_p_2023_11` covering the data's full
+range (2023-10 and 2023-11, as half-open ranges); and the
+`INSERT ... SELECT` to populate it. The partition names must start with
+`events_p_` — the gate counts scanned partitions by that prefix. (This
+is DDL/backfill, not a query — `indexes.sql` runs once, before your
+`solution.sql`, exactly like every earlier lesson's index-creation
+step; it's just heavier this time.)
 
 In `solution.sql`, write the same one-month query as `expected.sql`,
 but against your new partitioned table:

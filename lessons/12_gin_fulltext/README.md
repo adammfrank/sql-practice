@@ -45,11 +45,9 @@ in Postgres.
 
 ## 2. What to do
 
-In `indexes.sql`, build a GIN index over the `tsvector` expression:
-
-```sql
-CREATE INDEX idx_reviews_body_fts ON reviews USING gin (to_tsvector('english', body));
-```
+In `indexes.sql`, build a GIN index named `idx_reviews_body_fts` on
+`reviews`, over the `tsvector` expression `to_tsvector('english', body)`
+— use a `USING gin (...)` clause.
 
 The index has to be built over **exactly** the same expression the
 query uses — `to_tsvector('english', body)` — or the planner won't
