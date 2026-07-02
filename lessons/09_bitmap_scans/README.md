@@ -10,12 +10,8 @@ that turns out to be the best available option.
 
 ## 1. The problem
 
-```sql
-SELECT id
-FROM orders
-WHERE status = 'pending'
-  AND created_at >= '2023-09-15'::timestamptz;
-```
+Return the `id`s of `orders` matching both `status = 'pending'` **and**
+`created_at >= '2023-09-15'` (as a `timestamptz`).
 
 Note the fixed cutoff date: this course's seed data is generated with
 `created_at` timestamps spanning roughly November 2022 to November

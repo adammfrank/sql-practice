@@ -11,11 +11,9 @@ sub-document." **GIN** is the index type built for exactly this.
 
 ## 1. The problem
 
-```sql
-SELECT id
-FROM products
-WHERE attributes @> '{"color":"red","size":"m"}';
-```
+Return the `id`s of `products` whose `attributes` JSONB contains both
+`"color": "red"` and `"size": "m"` — the containment operator `@>`
+against `{"color":"red","size":"m"}`.
 
 A note on the predicate: the brief for this lesson suggested a
 single-key containment, `attributes @> '{"color":"red"}'`. `color` is
@@ -95,14 +93,13 @@ against semi-structured data indexable, without having to know your
 full schema of attributes in advance or normalize every possible
 attribute into its own column. If your application's real workload
 leans hard on one or two specific keys (e.g. always filtering by
-`color`), a **GIN index with the `jsonb_path_ops` operator class** —
-`CREATE INDEX ... USING gin (attributes jsonb_path_ops)` — builds a
-smaller, faster index tuned specifically for `@>` queries, at the cost
-of not supporting the `?`/`?&`/`?|` "does this key exist" operators
-that the default operator class supports. And if you find yourself
-querying the *same* one or two keys constantly, an **expression
-index** on just that key (lesson 11's technique, e.g. `CREATE INDEX ON
-products ((attributes->>'color'))`) is often a better fit than GIN —
+`color`), a **GIN index built with the `jsonb_path_ops` operator
+class** is a smaller, faster index tuned specifically for `@>` queries,
+at the cost of not supporting the `?`/`?&`/`?|` "does this key exist"
+operators that the default operator class supports. And if you find
+yourself querying the *same* one or two keys constantly, an
+**expression index** on just that key (lesson 11's technique — indexing
+`attributes->>'color'` directly) is often a better fit than GIN —
 smaller, and a plain B-tree lookup instead of an inverted index scan.
 GIN on the whole document is the right default when you don't know in
 advance which keys you'll be querying by.

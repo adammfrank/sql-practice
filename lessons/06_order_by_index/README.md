@@ -9,13 +9,9 @@ them, instead of computing and sorting the full result set first.
 
 ## 1. The problem
 
-```sql
-SELECT id
-FROM orders
-WHERE customer_id = 4242
-ORDER BY created_at DESC
-LIMIT 10;
-```
+Return the `id`s of `customer_id = 4242`'s ten most recent orders —
+filtered to that customer, ordered by `created_at` descending, limited
+to 10 rows.
 
 A customer's "10 most recent orders" — a very common access pattern.
 Without help, Postgres has to find all of this customer's orders,

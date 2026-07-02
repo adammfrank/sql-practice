@@ -9,11 +9,8 @@ Scan**.
 
 ## 1. The problem
 
-```sql
-SELECT customer_id, total
-FROM orders
-WHERE customer_id BETWEEN 1000 AND 1100;
-```
+Select `customer_id` and `total` from `orders` for every row whose
+`customer_id` falls between 1000 and 1100 (inclusive).
 
 This needs two columns: `customer_id` (in the `WHERE` and the
 `SELECT`) and `total` (only in the `SELECT`). A plain index on

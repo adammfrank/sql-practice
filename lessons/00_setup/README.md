@@ -29,11 +29,9 @@ yourself in `indexes.sql`.
 
 ## 1. The problem
 
-`expected.sql` (and, for this lesson only, `solution.sql` too) contains:
-
-```sql
-SELECT count(*) FROM orders WHERE status = 'pending';
-```
+`expected.sql` (and, for this lesson only, `solution.sql` too) holds a
+single query: a count of the rows in `orders` whose `status` is
+`'pending'`.
 
 `orders` has 500,000 rows; about 1 in 6 has `status = 'pending'`. There is
 no index on `status` in the fresh lesson database, so Postgres has no
@@ -63,12 +61,9 @@ The gate in `test_lesson.py` does two things:
    can see and name a full scan.
 
 You can reproduce the same plan yourself from `psql` or any client
-connected to a clone of `dojo_template`:
-
-```sql
-EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
-SELECT count(*) FROM orders WHERE status = 'pending';
-```
+connected to a clone of `dojo_template`: run that same `pending`-count
+query, prefixed with `EXPLAIN` and the options `ANALYZE`, `BUFFERS`, and
+`FORMAT JSON`.
 
 What each `EXPLAIN` option buys you:
 

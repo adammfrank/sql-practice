@@ -11,14 +11,10 @@ clause of its own — covers only the rows you actually query.
 
 ## 1. The problem
 
-```sql
-SELECT id
-FROM orders
-WHERE status = 'pending';
-```
+Return the `id`s of `orders` where `status = 'pending'`.
 
-`orders` has ~500,000 rows. A naive fix would be `CREATE INDEX ON
-orders (status)` — a full B-tree over every order regardless of
+`orders` has ~500,000 rows. A naive fix would be a plain full B-tree
+index on `status` — over every order regardless of
 status. That works, but it indexes ~416,000 rows you'll never look up
 this way (`paid`, `shipped`, `cancelled` orders) just to serve lookups
 against the ~84,000 `pending` ones.

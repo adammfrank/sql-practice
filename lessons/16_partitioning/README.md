@@ -11,13 +11,8 @@ matching rows.
 
 `events` has 3,000,000 rows spanning roughly 2023-10-11 through
 2023-11-14 — a little over a month of data. A query asking for just
-one calendar month:
-
-```sql
-SELECT count(*) FROM events WHERE ts >= '2023-11-01' AND ts < '2023-12-01';
-```
-
-still has to consider the whole table, because `events` is one
+one calendar month — a `count(*)` of `events` where `ts >= '2023-11-01'
+AND ts < '2023-12-01'` — still has to consider the whole table, because `events` is one
 physical relation. An index on `ts` would help (an Index Scan instead
 of a Seq Scan), but the table still contains months of data mixed
 together in the same heap, growing forever as more events arrive. In
@@ -65,21 +60,13 @@ is DDL/backfill, not a query — `indexes.sql` runs once, before your
 step; it's just heavier this time.)
 
 In `solution.sql`, write the same one-month query as `expected.sql`,
-but against your new partitioned table:
-
-```sql
-SELECT count(*) FROM events_part WHERE ts >= '2023-11-01' AND ts < '2023-12-01';
-```
+but against your new partitioned table `events_part`: a `count(*)` over
+the same `ts >= '2023-11-01' AND ts < '2023-12-01'` window.
 
 ## 4. Partition pruning
 
-Run `EXPLAIN` on that query and look at which partitions show up in
-the plan:
-
-```sql
-EXPLAIN SELECT count(*) FROM events_part
-WHERE ts >= '2023-11-01' AND ts < '2023-12-01';
-```
+Run `EXPLAIN` on that query — the `events_part` count over the November
+window — and look at which partitions show up in the plan.
 
 Because the `WHERE` clause is a constant range that the planner can
 compare directly against each partition's declared bounds, it proves

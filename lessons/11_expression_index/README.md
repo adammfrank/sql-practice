@@ -10,11 +10,8 @@ index the *result of the expression*, not the raw column.
 
 ## 1. The problem
 
-```sql
-SELECT id
-FROM customers
-WHERE lower(email) = 'user4242@example.com';
-```
+Return the `id`s of `customers` where `lower(email)` equals
+`'user4242@example.com'` — a case-insensitive email match.
 
 `customers` has 50,000 rows, one per `id` 1..50000, with `email` set
 to `user{id}@example.com`. A plain index on `email` can't help this

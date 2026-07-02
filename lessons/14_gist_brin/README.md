@@ -12,11 +12,8 @@ fraction of the size and maintenance cost.
 
 ## 1. The problem
 
-```sql
-SELECT count(*)
-FROM events
-WHERE ts >= '2023-11-01' AND ts < '2023-11-02';
-```
+Count the rows in `events` whose `ts` falls in the one-day window
+`ts >= '2023-11-01' AND ts < '2023-11-02'`.
 
 This course's seed data fixes `events.ts` at generation time
 (`dojo/seed.py`: `base = 1_700_000_000`, 3,000,000 rows, one per
@@ -113,18 +110,12 @@ query you actually want to ask is "does this range overlap that
 range" rather than "is this value between X and Y."
 
 This schema doesn't have a native range column to demonstrate that on
-directly, so here's the illustrative shape, for a table that did:
-
-```sql
--- Hypothetical: if `events` (or a bookings/reservations table) stored
--- a `during tstzrange` column instead of a single `ts`, a GiST index
--- makes overlap queries indexable:
-CREATE INDEX idx_bookings_during ON bookings USING gist (during);
-
-SELECT *
-FROM bookings
-WHERE during && tstzrange('2023-11-01', '2023-11-02');
-```
+directly, so picture a table that did: a bookings/reservations table
+with a `during` column of type `tstzrange` instead of a single `ts`
+timestamp. A GiST index on that `during` column would make overlap
+queries indexable — letting you ask which rows' `during` range overlaps
+(the `&&` operator) some target range, such as the first two days of
+November.
 
 The `&&` "overlaps" operator has no B-tree or BRIN equivalent — there's
 no single sort order that makes "does range A overlap range B" a

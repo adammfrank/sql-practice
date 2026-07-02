@@ -25,11 +25,8 @@ Before you touch anything, the test:
    `status = 'pending'`, using IDs above the existing max — a
    realistic "day 2 order surge" — **without** running `ANALYZE`
    afterward.
-2. Runs `EXPLAIN` (no `ANALYZE`, just the planner's estimate) on:
-
-   ```sql
-   SELECT id FROM orders WHERE status = 'pending';
-   ```
+2. Runs `EXPLAIN` (no `ANALYZE`, just the planner's estimate) on a query
+   selecting `id` from `orders` where `status = 'pending'`.
 
    Postgres still believes the table has roughly the row counts and
    value frequencies it saw at the *last* `ANALYZE` — from before the
@@ -37,19 +34,10 @@ Before you touch anything, the test:
    rows match `status = 'pending'` is now far too low: it doesn't know
    `'pending'` just became far more common than it used to be.
 
-Try it yourself first:
-
-```sql
-EXPLAIN SELECT id FROM orders WHERE status = 'pending';
-```
-
-Compare the `rows=` estimate in the plan to the real count:
-
-```sql
-SELECT count(*) FROM orders WHERE status = 'pending';
-```
-
-They will disagree substantially.
+Try it yourself first: run that same `pending`-filter query prefixed
+with `EXPLAIN` (no `ANALYZE`) and note the planner's `rows=` estimate.
+Then compare it to the real count — a `count(*)` of `orders` where
+`status = 'pending'`. They will disagree substantially.
 
 ## 2. What to do
 
@@ -99,13 +87,10 @@ and estimates, for each column:
   order (this last one matters for deciding whether an index scan
   will be mostly-sequential or mostly-random I/O).
 
-You can inspect all of this directly:
-
-```sql
-SELECT attname, n_distinct, most_common_vals, most_common_freqs
-FROM pg_stats
-WHERE tablename = 'orders' AND attname = 'status';
-```
+You can inspect all of this directly by selecting `attname`,
+`n_distinct`, `most_common_vals`, and `most_common_freqs` from the
+`pg_stats` view, filtered to `tablename = 'orders'` and
+`attname = 'status'`.
 
 ### Correlated columns: `CREATE STATISTICS`
 
@@ -115,13 +100,10 @@ doesn't know about (e.g. certain customers are disproportionately
 `'cancelled'`), a query filtering on both together can still get a bad
 estimate even with fresh single-column stats, because Postgres
 multiplies the two columns' individual selectivities as if they were
-unrelated. Extended statistics tell it not to assume that:
-
-```sql
-CREATE STATISTICS orders_status_customer_stats (dependencies)
-ON status, customer_id FROM orders;
-ANALYZE orders;
-```
+unrelated. Extended statistics tell it not to assume that: you'd create
+a `CREATE STATISTICS` object of the `dependencies` kind over `status`
+and `customer_id` on `orders`, then run `ANALYZE` on the table so the
+new statistics get populated.
 
 This lesson's gate only requires the `ANALYZE`, but `CREATE STATISTICS`
 is worth knowing about any time you see a multi-column filter whose
