@@ -19,14 +19,13 @@ to the matching rows.
 
 ## 2. What to do
 
-1. Open `indexes.sql` and add a single-column B-tree index on
-   `orders.customer_id`. Name it `idx_orders_customer` — the test
-   checks the plan uses an index by that exact name.
-2. Open `solution.sql` and write the query above (or copy it — the
-   point of this lesson is the index, not the SQL).
+1. In `indexes.sql`, add the index that lets Postgres find this
+   customer's rows without scanning the whole table. Write the
+   `CREATE INDEX` yourself — no particular index name is required.
+2. In `solution.sql`, write the query from the problem above.
 
-Write the `CREATE INDEX` statement yourself — step 1 gives you the
-name, table, and column it needs.
+Then run the test (below): it passes once the plan drops its `Seq Scan`
+and the query clears the speed bar.
 
 ## 3. Run it
 
@@ -48,7 +47,7 @@ lesson.apply_indexes(conn)
 actual = lesson.fetch(conn, lesson.solution_sql)
 grader.assert_rows_equal(actual, expected, ordered=False)
 p = planmod.explain(conn, lesson.solution_sql)
-grader.assert_plan(p, must_not_have=["Seq Scan"], uses_index="idx_orders_customer")
+grader.assert_plan(p, must_not_have=["Seq Scan"])
 measured = timing.measure_execution_ms(conn, lesson.solution_sql)
 grader.assert_faster_than_baseline(measured, baseline, ratio=8, floor_ms=2.0)
 ```
@@ -56,11 +55,11 @@ grader.assert_faster_than_baseline(measured, baseline, ratio=8, floor_ms=2.0)
 Three things have to be true:
 
 - **Correctness** — same rows as `expected.sql`.
-- **Plan shape** — no `Seq Scan` anywhere in the plan, and the plan
-  must actually use an index named `idx_orders_customer`. (Depending
-  on how selective the predicate is, Postgres might choose a plain
-  `Index Scan` or a `Bitmap Index Scan` + `Bitmap Heap Scan` — both
-  count, since both rely on the index.)
+- **Plan shape** — no `Seq Scan` anywhere in the plan, which means
+  Postgres is using your index instead. (Depending on how selective the
+  predicate is, it might choose a plain `Index Scan` or a
+  `Bitmap Index Scan` + `Bitmap Heap Scan` — both count, since both rely
+  on the index.)
 - **Speed** — your query must run at least 8x faster than the
   baseline (the same query measured with no index in place).
 

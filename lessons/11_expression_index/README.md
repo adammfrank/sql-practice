@@ -21,9 +21,10 @@ every row, lower-case its email, and compare.
 
 ## 2. What to do
 
-In `indexes.sql`, create an index named `idx_customers_lower_email` on
-`customers`, over the *expression* `lower(email)` rather than the bare
-`email` column.
+In `indexes.sql`, create an **expression index** — one built over the
+*result of the expression* this query filters by, rather than the bare
+column (that's the whole trick; a plain index on the column won't be
+used here).
 
 Then write the query above into `solution.sql`.
 
@@ -31,7 +32,7 @@ Then write the query above into `solution.sql`.
 
 ```
 Bitmap Heap Scan
-  -> Bitmap Index Scan on idx_customers_lower_email
+  -> Bitmap Index Scan on <your expression index>
 ```
 
 Postgres matches the `lower(email)` expression in your `WHERE` clause
@@ -60,9 +61,8 @@ tight one.
 
 ## 6. The gate
 
-Correctness, then the plan must not contain a `Seq Scan` and must use
-`idx_customers_lower_email`, then at least an 8x speedup over the
-no-index baseline.
+Correctness, then the plan must not contain a `Seq Scan`, then at least
+an 8x speedup over the no-index baseline.
 
 ## 7. The teaching point
 

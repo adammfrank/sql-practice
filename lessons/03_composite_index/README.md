@@ -16,9 +16,10 @@ half of all orders are `'paid'`, the rest split across `pending`,
 
 ## 2. What to do
 
-1. In `indexes.sql`, create **one composite index** named
-   `idx_orders_cust_status` on `orders`, over both columns in this
-   order: `customer_id` first, then `status`.
+1. In `indexes.sql`, add **one composite index** that covers both
+   columns this query filters on (section 3 explains why a single
+   composite index beats two separate ones, and why the column order
+   matters).
 2. In `solution.sql`, write the query above.
 
 ## 3. Why one composite index, not two single-column indexes
@@ -53,10 +54,10 @@ composite index over two single-column ones.
 
 ## 5. The gate
 
-Same shape as lesson 02: correctness, plan (no `Seq Scan`, must use
-`idx_orders_cust_status` — the planner may pick a plain `Index Scan`
-or a `Bitmap Index Scan`/`Bitmap Heap Scan` pair, both count), and at
-least an 8x speedup over the no-index baseline.
+Same shape as lesson 02: correctness, plan (no `Seq Scan` — the planner
+may reach your index via a plain `Index Scan` or a `Bitmap Index
+Scan`/`Bitmap Heap Scan` pair, both count), and at least an 8x speedup
+over the no-index baseline.
 
 ## 6. The teaching point
 

@@ -11,7 +11,7 @@ def test_solution(lesson_db):
     actual = lesson.fetch(conn, lesson.solution_sql)
     grader.assert_rows_equal(actual, expected, ordered=False)
     p = planmod.explain(conn, lesson.solution_sql)
-    grader.assert_plan(p, must_not_have=["Seq Scan"], uses_index="idx_orders_pending")
+    grader.assert_plan(p, must_not_have=["Seq Scan"])
     measured = timing.measure_execution_ms(conn, lesson.solution_sql)
     # Brief suggests ratio=10, calling 'pending' a "rare" status. It isn't:
     # STATUSES in dojo/seed.py is ["pending","paid","paid","paid","shipped",

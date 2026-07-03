@@ -19,12 +19,10 @@ sort them by `created_at DESC`, and keep the top 10.
 
 ## 2. What to do
 
-Create a composite index named `idx_orders_cust_created` on `orders`,
-over `customer_id` first, then `created_at` — and store that second
-column in **descending** order.
-
-The column order matters in two ways here, stacking on what you
-learned in lesson 03/04:
+In `indexes.sql`, build one index that lets Postgres return these rows
+*already in the order the query asks for*, so it can skip the sort and
+stop after the first 10. Two things about its column order make that
+work, stacking on what you learned in lesson 03/04:
 
 - `customer_id` first, so the index can seek directly to this
   customer's rows (the equality predicate).
@@ -53,10 +51,9 @@ LIMIT` queries are only correct if they return the *right* 10 rows in
 the *right* sequence. (For this particular customer and column, there
 are no duplicate `created_at` values, so the order is unambiguous.)
 
-The plan check looks for the absence of a `Sort` node, plus
-`uses_index="idx_orders_cust_created"`. No `Seq Scan` check this time
-— the interesting failure mode here isn't "no index at all", it's
-"index used for the `WHERE` but Postgres still sorts afterward."
+The plan check looks for the absence of a `Sort` node (it also forbids a
+`Seq Scan`). The interesting failure mode here isn't "no index at all"
+— it's "index used for the `WHERE` but Postgres still sorts afterward."
 
 ## 5. The teaching point
 

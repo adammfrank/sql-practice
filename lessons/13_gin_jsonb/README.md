@@ -30,9 +30,9 @@ different kind of predicate.
 
 ## 2. What to do
 
-In `indexes.sql`, build a GIN index named `idx_products_attrs` on
-`products`, over the whole `attributes` `jsonb` column — use a
-`USING gin (...)` clause.
+In `indexes.sql`, build a **GIN index** over the whole `attributes`
+`jsonb` column (`USING gin (...)`) — GIN is the index type that makes
+`@>` containment queries indexable.
 
 Then write the query above into `solution.sql`.
 
@@ -40,7 +40,7 @@ Then write the query above into `solution.sql`.
 
 ```
 Bitmap Heap Scan
-  -> Bitmap Index Scan on idx_products_attrs
+  -> Bitmap Index Scan on <your GIN index>
 ```
 
 By default, a GIN index on `jsonb` indexes every key and every value
@@ -68,11 +68,10 @@ too noisy to gate on" and skips the ratio check entirely rather than
 asserting on it (see `dojo/grader.py`) — and on `products`, the
 baseline sits right around that line, sometimes above it and
 sometimes below depending on system load. That's why this lesson's
-**primary** gate is the plan check — `uses_index="idx_products_attrs"`
-and `must_have=["Bitmap Index Scan"]` — which unlike the timing
-check always applies and is what actually proves you built and used
-the GIN index. The speed ratio is a secondary, best-effort check on
-top of that.
+**primary** gate is the plan check — `must_have=["Bitmap Index Scan"]`
+— which unlike the timing check always applies and is what actually
+proves you built and used a GIN index. The speed ratio is a secondary,
+best-effort check on top of that.
 
 ## 5. Run it
 
@@ -82,9 +81,9 @@ top of that.
 
 ## 6. The gate
 
-Correctness, then the plan must use `idx_products_attrs` and contain a
-`Bitmap Index Scan`, then at least a 2x speedup over the no-index
-baseline when that check applies (see step 4).
+Correctness, then the plan must contain a `Bitmap Index Scan`, then at
+least a 2x speedup over the no-index baseline when that check applies
+(see step 4).
 
 ## 7. The teaching point
 

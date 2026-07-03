@@ -34,16 +34,15 @@ correct query in `solution.sql`, and check the plan: you'll see a
 
 ## 3. What to do
 
-Add a second index in `indexes.sql`, on `status` alone — name it
-`idx_orders_status`.
+Add another index in `indexes.sql` that will let this query beat the
+full `Seq Scan`. Keep the existing `idx_orders_cust_status` line in
+place — you're **adding** an index, not replacing it. (In a real
+system you'd reconsider whether you need both; here the point is to see
+for yourself that the composite index can't stand in for its second
+column.)
 
-Keep the existing `idx_orders_cust_status` line in place — you're
-**adding** an index, not replacing the old one. (In a real system
-you'd reconsider whether you need both; here the point is to see for
-yourself that the composite index can't substitute for a single-column
-one on its second column.)
-
-Then write the query in `solution.sql`.
+Then write the query in `solution.sql` and run the test — it tells you
+whether your index did the job.
 
 ## 4. Run it
 
@@ -53,8 +52,8 @@ Then write the query in `solution.sql`.
 
 ## 5. The gate
 
-Correctness, plan (no `Seq Scan`, must use `idx_orders_status`), and a
-speedup over the no-index baseline. The **plan check is the real gate
+Correctness, plan (no `Seq Scan`), and a speedup over the no-index
+baseline. The **plan check is the real gate
 here** — it's what forces you to build the right index. The required
 ratio (1.5x) is much lower than earlier lessons and is only a secondary
 sanity floor. `status` has only four distinct values, and `'shipped'`

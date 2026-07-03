@@ -25,8 +25,9 @@ day's worth of rows (~86,400, one per second).
 
 ## 2. What to do
 
-In `indexes.sql`, add a BRIN index named `idx_events_ts_brin` on
-`events`, over the `ts` column — use a `USING brin (...)` clause.
+In `indexes.sql`, add a **BRIN index** on the `ts` column
+(`USING brin (...)`) — BRIN is the type suited to this huge,
+time-ordered table.
 
 Then write the query above into `solution.sql`.
 
@@ -35,7 +36,7 @@ Then write the query above into `solution.sql`.
 ```
 Aggregate
   -> Bitmap Heap Scan
-       -> Bitmap Index Scan on idx_events_ts_brin
+       -> Bitmap Index Scan on <your BRIN index>
 ```
 
 BRIN doesn't index individual rows. It divides the table into
@@ -95,9 +96,8 @@ occasionally isn't cleared given that variance.
 
 ## 7. The gate
 
-Correctness, then the plan must contain a `Bitmap Index Scan` and use
-`idx_events_ts_brin`, then at least a 4x speedup over the no-index
-baseline.
+Correctness, then the plan must contain a `Bitmap Index Scan`, then at
+least a 4x speedup over the no-index baseline.
 
 ## 8. GiST (reading only — no separate gate)
 
