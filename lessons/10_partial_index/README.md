@@ -21,23 +21,21 @@ against the ~84,000 `pending` ones.
 
 ## 2. What to do
 
-In `indexes.sql`, create a **partial index** named `idx_orders_pending`:
-a B-tree on `orders(id)` with its own `WHERE` clause that limits it to
-rows matching `status = 'pending'`.
+In `indexes.sql`, create a **partial index** — a B-tree with its own
+`WHERE` clause, so it only covers the slice of rows this query looks up
+rather than the whole table.
 
-Note the index is on `id` (not `status`) — once the `WHERE` clause has
-already narrowed things down to pending orders, there's nothing left
-to search *by*, so the index just needs to give Postgres a compact
-list of matching row locations. This also means a query like `SELECT
-id FROM orders WHERE status = 'pending'` can potentially be answered
-as an **index-only scan** — no heap access needed at all, since `id`
-is the only column requested and it's sitting right there in the
-index. Then write the query above into `solution.sql`.
+A useful detail for what to put *in* the index: once the partial
+`WHERE` clause has already narrowed things to pending orders, there's
+nothing left to search *by*, so the index only needs a compact list of
+matching row locations. Indexing just the `id` the query returns lets
+Postgres answer the whole thing as an **index-only scan** — no heap
+access at all. Then write the query above into `solution.sql`.
 
 ## 3. What you should see in the plan
 
 ```
-Index Only Scan using idx_orders_pending
+Index Only Scan using <your partial index>
 ```
 
 Postgres recognizes that your query's `WHERE status = 'pending'`
@@ -64,9 +62,8 @@ system load). This lesson's gate uses `ratio=2`, set below that
 measured floor so it's a real gate without being flaky — noticeably
 lower than the brief's originally suggested `ratio=10`, which isn't
 achievable at this selectivity (the same ceiling that forced lessons
-04 and 09 down). The plan assertion (no `Seq Scan`, must use
-`idx_orders_pending`) is the primary teaching gate here; the speed
-ratio is a secondary floor.
+04 and 09 down). The plan assertion (no `Seq Scan`) is the primary
+teaching gate here; the speed ratio is a secondary floor.
 
 ## 5. The real payoff: index size, not just query speed
 
@@ -98,10 +95,9 @@ fraction of the size and write cost of indexing everything.
 
 ## 7. The gate
 
-Correctness, then the plan must not contain a `Seq Scan` and must use
-`idx_orders_pending`, then at least a 2x speedup over the no-index
-baseline (see step 4 for why 2x, not the more dramatic ratios from
-earlier lessons).
+Correctness, then the plan must not contain a `Seq Scan`, then at least
+a 2x speedup over the no-index baseline (see step 4 for why 2x, not the
+more dramatic ratios from earlier lessons).
 
 ## 8. The teaching point
 

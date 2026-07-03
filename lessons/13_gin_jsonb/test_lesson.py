@@ -11,7 +11,7 @@ def test_solution(lesson_db):
     actual = lesson.fetch(conn, lesson.solution_sql)
     grader.assert_rows_equal(actual, expected, ordered=False)
     p = planmod.explain(conn, lesson.solution_sql)
-    grader.assert_plan(p, must_have=["Bitmap Index Scan"], uses_index="idx_products_attrs")
+    grader.assert_plan(p, must_have=["Bitmap Index Scan"])
     measured = timing.measure_execution_ms(conn, lesson.solution_sql)
     # products.attributes.color is one of 5 values (dojo/seed.py), so a
     # single-key containment like {"color":"red"} matches ~20% of rows

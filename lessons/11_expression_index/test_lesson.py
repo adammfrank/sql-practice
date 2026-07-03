@@ -11,7 +11,7 @@ def test_solution(lesson_db):
     actual = lesson.fetch(conn, lesson.solution_sql)
     grader.assert_rows_equal(actual, expected, ordered=False)
     p = planmod.explain(conn, lesson.solution_sql)
-    grader.assert_plan(p, must_not_have=["Seq Scan"], uses_index="idx_customers_lower_email")
+    grader.assert_plan(p, must_not_have=["Seq Scan"])
     measured = timing.measure_execution_ms(conn, lesson.solution_sql)
     # customers.email is `user{id}@example.com` for id 1..50000 (dojo/seed.py),
     # so lower(email) = 'user4242@example.com' matches exactly one row out of

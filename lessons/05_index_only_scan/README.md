@@ -19,14 +19,13 @@ still have to visit the heap for every row just to read `total`.
 
 ## 2. What to do
 
-In `indexes.sql`, create an index named `idx_orders_cust_incl` on
-`customer_id` that also *carries* `total` as a non-key payload column,
-using an `INCLUDE` clause.
-
-`INCLUDE` columns aren't part of the B-tree search key (you still
-can't search by `total` with this index) — they're just extra data
-stored alongside each index entry so queries that only *read* them
-don't need the heap. Then write the query in `solution.sql`.
+In `indexes.sql`, add a **covering index** — one that carries every
+column this query reads, so Postgres can answer it straight from the
+index without visiting the heap at all. The tool for that is an
+`INCLUDE` clause: it attaches payload columns to a B-tree without making
+them part of the search key (you still can't search by them), purely so
+read-only queries don't need the heap. Then write the query in
+`solution.sql`.
 
 ## 3. The VACUUM catch
 

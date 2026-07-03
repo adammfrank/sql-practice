@@ -49,17 +49,14 @@ lookups is wasteful.
 
 ## 3. What to do
 
-In `indexes.sql`, add indexes on both join-relevant lookup columns:
-`idx_orders_customer_id` on `orders (customer_id)`, and
-`idx_order_items_order_id` on `order_items (order_id)`.
+In `indexes.sql`, add the indexes that let this selective join run off
+index lookups instead of full scans. Two lookups need to get cheap:
 
-- `idx_orders_customer_id` lets Postgres jump straight to customer
-  4242's orders instead of scanning the whole `orders` table.
-- `idx_order_items_order_id` lets Postgres look up each of those
-  orders' line items directly by `order_id`, instead of scanning all
-  of `order_items`.
+- finding customer 4242's orders without scanning all of `orders`, and
+- finding each of those orders' line items without scanning all of
+  `order_items`.
 
-Then write the Part B query above into `solution.sql`.
+Then write the Part B query above into `solution.sql` and run the test.
 
 With both indexes in place and a selective outer predicate, the
 planner switches to a **Nested Loop**: for each of customer 4242's

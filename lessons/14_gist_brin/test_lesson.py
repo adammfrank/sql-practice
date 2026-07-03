@@ -11,7 +11,7 @@ def test_solution(lesson_db):
     actual = lesson.fetch(conn, lesson.solution_sql)
     grader.assert_rows_equal(actual, expected, ordered=False)
     p = planmod.explain(conn, lesson.solution_sql)
-    grader.assert_plan(p, must_have=["Bitmap Index Scan"], uses_index="idx_events_ts_brin")
+    grader.assert_plan(p, must_have=["Bitmap Index Scan"])
     measured = timing.measure_execution_ms(conn, lesson.solution_sql)
     # events.ts is strictly increasing, one row per second, spanning
     # 2023-10-11 to 2023-11-14 (dojo/seed.py: base=1_700_000_000,

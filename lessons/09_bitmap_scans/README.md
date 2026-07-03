@@ -36,9 +36,10 @@ but neither condition alone narrows things down much.
 
 ## 2. What to do
 
-In `indexes.sql`, create **two separate single-column indexes** —
-deliberately not a composite one this time: `idx_orders_status` on
-`status`, and `idx_orders_created_at` on `created_at`.
+In `indexes.sql`, create **two separate single-column indexes** — one
+for each of the query's two conditions, deliberately *not* one composite
+index this time (the whole point is to watch Postgres combine two
+indexes on the fly).
 
 Then write the query above into `solution.sql`.
 
@@ -47,8 +48,8 @@ Then write the query above into `solution.sql`.
 ```
 Bitmap Heap Scan
   -> BitmapAnd
-       -> Bitmap Index Scan on idx_orders_status
-       -> Bitmap Index Scan on idx_orders_created_at
+       -> Bitmap Index Scan on <your status index>
+       -> Bitmap Index Scan on <your created_at index>
 ```
 
 Each `Bitmap Index Scan` walks one index and builds an in-memory
@@ -69,9 +70,9 @@ when:
 
 - **Neither single index is selective enough on its own** to just use
   it and recheck the other condition row-by-row. If `status =
-  'pending'` matched 50 rows, Postgres would just use
-  `idx_orders_status` alone and filter the date condition during the
-  heap recheck — no need to consult the other index at all.
+  'pending'` matched 50 rows, Postgres would just use the `status`
+  index alone and filter the date condition during the heap recheck —
+  no need to consult the other index at all.
 - **Both indexes are still meaningfully selective together.** If one
   condition matched almost the whole table, intersecting bitmaps
   wouldn't save much over just using the other index alone.
