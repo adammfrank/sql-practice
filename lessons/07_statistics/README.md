@@ -59,6 +59,14 @@ Use `EXPLAIN` (the estimate), not `EXPLAIN ANALYZE` — the latter runs
 the query and reports the *real* row count, which hides the very gap
 you're trying to see.
 
+Note: the lab deliberately switches off autovacuum on `orders` (see
+`setup.sql`), so the stale statistics stay put until *you* run `ANALYZE`.
+In a real database you wouldn't do that — autovacuum's autoanalyze would
+refresh them on its own within ~a minute of a surge this size, which is
+the automatic version of the `ANALYZE` you're running by hand (see §3–4).
+Without that switch, the daemon "fixes" the estimate before you can even
+see it was stale.
+
 When you're done, drop the lab database (running `make lab` again also
 re-creates it fresh, so you can always start over):
 
