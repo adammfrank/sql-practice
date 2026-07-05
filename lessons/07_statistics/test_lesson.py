@@ -11,20 +11,13 @@ ERROR_THRESHOLD = 0.25
 
 
 def _skew_stats(conn):
-    """Insert a burst of new 'pending' orders without ANALYZE-ing, so the
-    planner's cached statistics (from the template's seed-time ANALYZE)
-    no longer reflect the table's real status distribution."""
+    """Apply the lesson's setup.sql: a burst of new 'pending' orders inserted
+    without ANALYZE-ing, so the planner's cached statistics (from the
+    template's seed-time ANALYZE) no longer reflect the table's real status
+    distribution. This is the same setup `make lab` applies, so the lab and
+    the gate exercise an identical scenario."""
     with conn.cursor() as cur:
-        cur.execute("SELECT max(id) FROM orders")
-        max_id = cur.fetchone()[0]
-        cur.execute(
-            """
-            INSERT INTO orders (id, customer_id, status, total, created_at)
-            SELECT gs, (gs %% 50000) + 1, 'pending', 42.00, now()
-            FROM generate_series(%s, %s) AS gs
-            """,
-            (max_id + 1, max_id + 200_000),
-        )
+        cur.execute(lesson.setup_sql)
     conn.commit()
 
 
