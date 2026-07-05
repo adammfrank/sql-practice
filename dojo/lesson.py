@@ -21,6 +21,12 @@ class Lesson:
     def expected_sql(self) -> str:
         return self.read("expected.sql")
 
+    @property
+    def setup_sql(self) -> str:
+        """Optional scenario setup (extra rows, skew, etc.) a lesson needs in
+        place before you experiment or the gate runs. Empty if absent."""
+        return self.read("setup.sql")
+
     def apply_indexes(self, conn) -> None:
         ddl = self.indexes_sql.strip()
         if ddl:

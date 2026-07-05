@@ -1,54 +1,70 @@
 # Lesson 07 — Statistics, Selectivity, and `ANALYZE`
 
 Every lesson so far has been about giving the planner an index to use.
-This lesson is about something more fundamental: the planner has to
-*guess*, in advance, how many rows a predicate will match, before it
-can decide whether an index is even worth using. Those guesses come
-from **statistics** — a compact summary of each column's data,
-stored in `pg_statistic` (readable via the friendlier `pg_stats`
-view) and refreshed by `ANALYZE`. If the statistics are stale, the
-planner's guesses can be badly wrong, and it will pick a bad plan even
-when a perfectly good index exists.
+This one is different: there's no index to add, and getting it right
+isn't really about editing a file — it's a **hands-on lab**. You'll
+clone the database, skew it the way a real production surge would, and
+watch the query planner make a bad estimate from stale statistics, then
+fix it and watch the estimate snap back into line.
+
+The planner has to *guess*, before it runs anything, how many rows a
+predicate will match — that guess is how it chooses between a sequential
+scan, an index scan, a nested loop, and so on. The guesses come from
+**statistics**: a compact per-column summary stored in `pg_statistic`
+(readable via the friendlier `pg_stats` view) and refreshed by
+`ANALYZE`. When the statistics go stale, the guesses go wrong, and the
+planner picks bad plans even when a perfect index exists.
 
 ## 1. The problem
 
-This lesson's test simulates something that happens constantly in a
-live system: a burst of new rows lands in `orders` — say, a flood of
-newly created `'pending'` orders — and nobody has run `ANALYZE` yet.
-Autovacuum will get to it eventually, but "eventually" might be
-minutes away, and in the meantime the planner is working from
-out-of-date statistics.
+Picture a "day-2 order surge": a burst of new `'pending'` orders lands
+in `orders`, and nobody has run `ANALYZE` yet (autovacuum will get to
+it, but not for a while). Postgres still believes `'pending'` is about
+1-in-6 of the table — the ratio it measured at the last `ANALYZE`,
+before the surge — so its estimate for how many rows match
+`status = 'pending'` is now far too low.
 
-Before you touch anything, the test:
+## 2. Explore it yourself
 
-1. Inserts 200,000 new rows into `orders`, all with
-   `status = 'pending'`, using IDs above the existing max — a
-   realistic "day 2 order surge" — **without** running `ANALYZE`
-   afterward.
-2. Runs `EXPLAIN` (no `ANALYZE`, just the planner's estimate) on a query
-   selecting `id` from `orders` where `status = 'pending'`.
+This lesson ships a `setup.sql` that inserts 200,000 new `'pending'`
+orders (ids above the current max, and crucially **no** `ANALYZE`
+afterward). Spin up a lab database with that already applied:
 
-   Postgres still believes the table has roughly the row counts and
-   value frequencies it saw at the *last* `ANALYZE` — from before the
-   200,000 new `'pending'` rows existed. So its estimate for how many
-   rows match `status = 'pending'` is now far too low: it doesn't know
-   `'pending'` just became far more common than it used to be.
+```bash
+make lab lessons/07_statistics
+```
 
-Try it yourself first: run that same `pending`-filter query prefixed
-with `EXPLAIN` (no `ANALYZE`) and note the planner's `rows=` estimate.
-Then compare it to the real count — a `count(*)` of `orders` where
-`status = 'pending'`. They will disagree substantially.
+That clones the seeded template into `dojo_lab_07_statistics`, runs the
+insert, and drops you into a `psql` session connected to it. Now walk
+the scenario by hand:
 
-## 2. What to do
+1. **See the stale estimate.** Run a plain `EXPLAIN` — *not* `EXPLAIN
+   ANALYZE` — on a query selecting `id` from `orders` where `status` is
+   `'pending'`. Read the `rows=` figure in the top line: that's the
+   planner's guess.
+2. **See the truth.** Run a `count(*)` of that same filter. It's far
+   higher than the guess — those are the 200,000 rows the planner
+   doesn't know about yet.
+3. **Fix it.** Run `ANALYZE` on the `orders` table.
+4. **Watch the estimate correct itself.** Run the same `EXPLAIN` again;
+   `rows=` now lands within a percent or two of the real count.
 
-In `solution.sql`, tell Postgres to recompute statistics for the
-table that changed — the `ANALYZE` command, pointed at `orders`.
+On the seeded data you'll see roughly a **stale estimate of ~115,000**,
+a **real count of ~284,000**, and — after `ANALYZE` — a **fresh
+estimate of ~286,000**. Note the plan stays a `Seq Scan` throughout
+(there's no index on `status`): the point isn't the plan *shape*, it's
+how wrong the planner's *numbers* were until you refreshed the stats.
 
-That's it — `ANALYZE` samples the table's rows and rebuilds the
-per-column statistics (most common values and their frequencies,
-a histogram of the rest, `n_distinct`, null fraction, and so on) that
-the query planner's cost estimator relies on for every plan it builds
-touching that table.
+Use `EXPLAIN` (the estimate), not `EXPLAIN ANALYZE` — the latter runs
+the query and reports the *real* row count, which hides the very gap
+you're trying to see.
+
+When you're done, drop the lab database (running `make lab` again also
+re-creates it fresh, so you can always start over):
+
+```bash
+make lab-clean
+```
 
 ## 3. Why this matters even when you're "just adding an index"
 
@@ -90,7 +106,7 @@ and estimates, for each column:
 You can inspect all of this directly by selecting `attname`,
 `n_distinct`, `most_common_vals`, and `most_common_freqs` from the
 `pg_stats` view, filtered to `tablename = 'orders'` and
-`attname = 'status'`.
+`attname = 'status'` — try it in the lab, before and after `ANALYZE`.
 
 ### Correlated columns: `CREATE STATISTICS`
 
@@ -105,35 +121,27 @@ a `CREATE STATISTICS` object of the `dependencies` kind over `status`
 and `customer_id` on `orders`, then run `ANALYZE` on the table so the
 new statistics get populated.
 
-This lesson's gate only requires the `ANALYZE`, but `CREATE STATISTICS`
-is worth knowing about any time you see a multi-column filter whose
-estimated row count looks suspicious even after a plain `ANALYZE`.
+`CREATE STATISTICS` is worth knowing about any time you see a
+multi-column filter whose estimated row count looks suspicious even
+after a plain `ANALYZE`.
 
-## 5. Run it
+## 5. Optional: confirm it the way the other lessons do
+
+If you'd rather have an automated check, `solution.sql` is still a stub.
+Put the same `ANALYZE` statement in it and run:
 
 ```bash
-.venv/Scripts/pytest lessons/07_statistics -v
+make test lessons/07_statistics
 ```
 
-## 6. The gate
+The gate applies the *same* `setup.sql`, records the planner's estimate,
+runs your `solution.sql`, and asserts the estimate is now within 25% of
+the true count. It's the one lesson whose gate compares planner
+*estimates* rather than query results or plan shape — which is exactly
+why it never fit the "add an index, beat the baseline" mold, and why the
+lab above is the better way to feel what's going on.
 
-This lesson's gate is different from every other lesson's — there's
-no baseline speed comparison, because the point isn't "make this
-query faster," it's "make the planner's estimate *accurate*." The
-test:
-
-1. Skews the data (200,000 new `'pending'` rows, no `ANALYZE`).
-2. Captures the planner's **estimated** row count for
-   `WHERE status = 'pending'` via `EXPLAIN` (no `ANALYZE` keyword —
-   this only asks the planner to *estimate*, not actually run the
-   query) — this must be badly wrong (more than 25% off the true
-   count) before your fix, or the gate isn't testing anything real.
-3. Runs your `solution.sql`.
-4. Re-captures the estimate the same way, and asserts
-   `abs(estimated - actual) / actual < 0.25` — the estimate must now
-   be within 25% of the true row count.
-
-## 7. The teaching point
+## 6. The teaching point
 
 An index can only help if the planner's cost model correctly predicts
 that using it is cheap — and that prediction is only as good as the

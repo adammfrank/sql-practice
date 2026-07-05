@@ -1,4 +1,4 @@
-.PHONY: up down seed test plan FORCE
+.PHONY: up down seed test plan lab lab-clean FORCE
 up:
 	docker compose up -d
 down:
@@ -15,6 +15,15 @@ test:
 # solution.sql against a throwaway clone and print the EXPLAIN plan (no gate)
 plan:
 	uv run python -m dojo.plan_lesson $(filter-out plan,$(MAKECMDGOALS))
+
+# `make lab lessons/07_statistics` -> create a persistent clone
+# (dojo_lab_<name>) with the lesson's indexes.sql + setup.sql applied, then
+# open a psql session in it for hands-on EXPLAIN/ANALYZE experimenting.
+# `make lab-clean` drops every dojo_lab_* database.
+lab:
+	uv run python -m dojo.lab $(filter-out lab,$(MAKECMDGOALS))
+lab-clean:
+	uv run python -m dojo.lab --clean
 
 # Let a lesson path be passed as a positional argument to the targets above
 # without Make trying to build it as a target. The FORCE prerequisite keeps
