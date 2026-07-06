@@ -41,7 +41,7 @@ exactly the baseline behavior this lesson wants you to see.
 ## 2. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/00_setup -v
+make test lessons/00_setup
 ```
 
 It should pass immediately — `solution.sql` is pre-filled with the

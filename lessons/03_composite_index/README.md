@@ -49,7 +49,7 @@ composite index over two single-column ones.
 ## 4. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/03_composite_index -v
+make test lessons/03_composite_index
 ```
 
 ## 5. The gate

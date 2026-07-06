@@ -30,7 +30,7 @@ and the query clears the speed bar.
 ## 3. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/02_first_index -v
+make test lessons/02_first_index
 ```
 
 With the stub `indexes.sql` (no index) and stub `solution.sql`

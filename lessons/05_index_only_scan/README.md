@@ -46,7 +46,7 @@ index.
 ## 4. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/05_index_only_scan -v
+make test lessons/05_index_only_scan
 ```
 
 ## 5. The gate

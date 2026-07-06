@@ -47,7 +47,7 @@ whether your index did the job.
 ## 4. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/04_left_prefix -v
+make test lessons/04_left_prefix
 ```
 
 ## 5. The gate

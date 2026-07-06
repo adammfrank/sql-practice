@@ -1,117 +1,70 @@
 # Lesson 17 — Materialized Views
 
-Every earlier lesson made a query faster by helping the planner reach
-the same fresh answer more efficiently — an index, better statistics,
-a partition that gets pruned. This lesson takes a different approach
-entirely: **precompute the answer once, store it, and read the stored
-copy** — at the cost of that copy going stale until you refresh it.
+Every earlier lesson made a query reach the same fresh answer more
+efficiently. This one is different: **precompute the answer once, store
+it, and read the stored copy** — at the cost of it going stale until you
+refresh.
 
 ## 1. The problem
 
-Recall lesson 01's aggregate — total revenue per product category, for
-paid orders: join `order_items` to `orders` (on `orders.id =
-order_items.order_id`) and to `products` (on `products.id =
-order_items.product_id`), keep only rows where `orders.status =
-'paid'`, and for each `products.category` sum `quantity * price` as the
-revenue.
+Lesson 01's aggregate — revenue per category for paid orders: join
+`order_items` to `orders` (`orders.id = order_items.order_id`) and to
+`products` (`products.id = order_items.product_id`), keep only
+`orders.status = 'paid'`, and for each `products.category` sum
+`quantity * price` as revenue.
 
-This has to join and aggregate across roughly a million `order_items`
-rows every single time it runs. No index rescues that fundamentally —
-it's an aggregate over most of the table, not a selective lookup. If a
-dashboard calls this query every few seconds, you're redoing the same
-expensive join and aggregation over and over for an answer that only
-changes when new orders are paid.
+This joins and aggregates ~1,000,000 `order_items` every run. No index
+fixes that — it's an aggregate over most of the table, not a selective
+lookup. A dashboard calling it every few seconds redoes the same work for
+an answer that only changes when new orders are paid.
 
-## 2. Materialized views
+## 2. What to do
 
-A **materialized view** runs a query once and stores its result set
-as if it were a real table. You create one with the form
-`CREATE MATERIALIZED VIEW <name> AS <query>` — name it `mv_cat_revenue`
-and give it the paid-revenue-per-category query from section 1 as its
-body.
+- In `indexes.sql`, create a **materialized view** named
+  **`mv_cat_revenue`** whose body is the query above
+  (`CREATE MATERIALIZED VIEW mv_cat_revenue AS ...`), plus a
+  **`CREATE UNIQUE INDEX`** on its `category` column.
+- In `solution.sql`, select `category, revenue` from `mv_cat_revenue` —
+  reading the precomputed rows, not recomputing the aggregate.
 
-Once created, `mv_cat_revenue` is queryable exactly like a table — a
-plain `SELECT` of `category` and `revenue` from it — and returns
-instantly, because it's just reading six already-computed rows off
-disk, not touching `order_items`, `orders`, or `products` at all.
+A materialized view stores the *result set* as if it were a table (unlike
+a plain `VIEW`, which just re-runs its query text each time), so the
+`SELECT` returns almost instantly — reading a handful of rows, touching
+none of the base tables.
 
-This is different from an ordinary (non-materialized) `VIEW`, which is
-just a saved query text — querying it still re-runs the underlying
-join and aggregation every time. A materialized view actually stores
-the *result*.
+## 3. Staleness and `REFRESH`
 
-You can index a materialized view like any table — and here you'll want
-a **unique** index on its `category` column (a `CREATE UNIQUE INDEX`).
-That isn't just a lookup optimization: it's a prerequisite for one
-specific refresh mode, covered next.
+The view is a snapshot; new paid orders don't update it. You refresh with
+`REFRESH MATERIALIZED VIEW mv_cat_revenue`. Plain `REFRESH` locks the
+view exclusively while it recomputes (readers block).
+`REFRESH ... CONCURRENTLY` recomputes into a copy and swaps it in so
+readers never block — its one requirement is exactly the **unique index**
+you created (it needs it to diff old rows against new), and like `VACUUM`
+it can't run inside a transaction block.
 
-## 3. What to do
-
-In `indexes.sql`, create `mv_cat_revenue` (the query above) and a
-unique index on `category`. In `solution.sql`, select `category,
-revenue` from `mv_cat_revenue` — reading the precomputed rows instead
-of recomputing the aggregate.
-
-## 4. Staleness and `REFRESH`
-
-The catch: `mv_cat_revenue` is a snapshot. If new orders get marked
-`'paid'` after you create it, the materialized view's rows don't
-update on their own — you have to explicitly refresh it with a
-`REFRESH MATERIALIZED VIEW` on `mv_cat_revenue`.
-
-Plain `REFRESH` recomputes the whole thing and — importantly — takes
-an exclusive lock on the materialized view for the duration, meaning
-queries against it block until the refresh finishes. For a view that's
-being read constantly, that's often unacceptable.
-
-`REFRESH MATERIALIZED VIEW CONCURRENTLY` avoids that: it recomputes
-into a temporary copy and swaps it in, using row-level diffing so
-concurrent readers keep seeing the old data (never blocked) until the
-new data is ready. Its one requirement is exactly the unique index you
-created above — `CONCURRENTLY` needs a unique index on the
-materialized view to match old rows to new ones. And like `VACUUM`
-(lesson 15), `REFRESH ... CONCURRENTLY` cannot run inside a transaction
-block.
-
-## 5. Run it
+## 4. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/17_materialized_views -v
+make test lessons/17_materialized_views
 ```
 
-## 6. The gate
+## 5. The gate
 
-This lesson uses the same shape as the ratio-graded indexing lessons,
-but the "index" is a materialized view instead:
+Same shape as the ratio-graded lessons, but the "index" is the matview.
+`expected.sql` (the live aggregate) is both the answer key and the
+baseline, measured **before** `indexes.sql` runs. Then the matview is
+created, your `solution.sql` is checked for correctness against
+`expected.sql` (same rows, different source), and its execution time must
+be at least **20x faster** than the live aggregate. (Reading a few
+precomputed rows vs. a million-row join clears that by orders of
+magnitude.)
 
-1. `expected.sql` — the live aggregate (lesson 01's query, verbatim) —
-   is both the correctness answer key and the speed baseline.
-2. The baseline execution time is measured **before** `indexes.sql`
-   runs, so it reflects the real cost of the live join+aggregate over
-   ~1,000,000 `order_items` rows, not anything sped up by the
-   materialized view.
-3. `indexes.sql` creates `mv_cat_revenue` and its unique index.
-4. Your `solution.sql` is checked for correctness against
-   `expected.sql` (same rows, different source) — the placeholder
-   `SELECT 1;` fails this immediately, since `mv_cat_revenue` doesn't
-   even exist yet for it to reference, let alone match 6 rows.
-5. Your `solution.sql`'s execution time is measured and must be at
-   least **20x faster** than the live-aggregate baseline.
+## 6. The teaching point
 
-Reading 6 precomputed rows is enormously faster than a million-row
-join and aggregation — measured in this environment, the live
-aggregate took ~186ms and the materialized-view read took ~0.006ms,
-comfortably clearing the 20x bar by several orders of magnitude.
-
-## 7. The teaching point
-
-Materialized views trade freshness for speed: they're the right tool
-when a query's result changes far less often than it's read, and when
-"technically current as of the last refresh" is an acceptable answer
-(a nightly sales dashboard, an hourly leaderboard) rather than "must
-reflect the last committed transaction" (an account balance). Deciding
-between "add an index and keep the live query" versus "materialize the
-result and refresh on a schedule" is a real operational judgment call,
-not something the planner makes for you — that's why this lesson has
-no plan-shape assertion, only a speed comparison against the live
-alternative.
+Materialized views trade freshness for speed: right when a result changes
+far less often than it's read and "current as of the last refresh" is
+acceptable (a nightly dashboard, an hourly leaderboard), not when it must
+reflect the last committed transaction (an account balance). Choosing
+"add an index and keep the live query" vs. "materialize the result and
+refresh on a schedule" is an operational judgment — which is why this
+lesson gates on speed, not plan shape.

@@ -39,7 +39,7 @@ this is a refresher, not a trick).
 ## 3. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/01_select_filter -v
+make test lessons/01_select_filter
 ```
 
 With the placeholder still in `solution.sql`, this **fails** — `SELECT

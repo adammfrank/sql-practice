@@ -27,7 +27,7 @@ Then write the query in `solution.sql`.
 ## 3. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/06_order_by_index -v
+make test lessons/06_order_by_index
 ```
 
 ## 4. The gate

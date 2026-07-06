@@ -1,133 +1,90 @@
 # Lesson 16 — Declarative Partitioning and Partition Pruning
 
-Indexes make lookups inside a table fast. **Partitioning** takes a
-different approach for very large tables: instead of one giant table
-with one giant index, you split the table itself into smaller physical
-pieces ("partitions"), each holding a disjoint slice of the data — and
-the planner can skip entire partitions it knows can't contain
+Indexes speed lookups *inside* a table. **Partitioning** splits the
+table itself into smaller physical pieces, each holding a disjoint slice
+of the data, so the planner can skip entire pieces that can't contain
 matching rows.
 
 ## 1. The problem
 
-`events` has 3,000,000 rows spanning roughly 2023-10-11 through
-2023-11-14 — a little over a month of data. A query asking for just
-one calendar month — a `count(*)` of `events` where `ts >= '2023-11-01'
-AND ts < '2023-12-01'` — still has to consider the whole table, because `events` is one
-physical relation. An index on `ts` would help (an Index Scan instead
-of a Seq Scan), but the table still contains months of data mixed
-together in the same heap, growing forever as more events arrive. In
-many real systems, older partitions are also handled completely
-differently from the current one — archived to cold storage, dropped
-after a retention period, compressed — and it's awkward to do any of
-that to *part* of a plain table.
+`events` has 3,000,000 rows spanning ~2023-10-11 to 2023-11-14. A
+`count(*)` for one month still considers the whole table, because
+`events` is one physical relation. An index on `ts` would help, but the
+heap still mixes months together and grows forever — and archiving or
+dropping *part* of a plain table is awkward.
 
 ## 2. Declarative partitioning
 
-Postgres lets you declare a table as partitioned **by range** (there's
-also list and hash partitioning) on one or more columns, then attach
-child tables ("partitions") that each own a specific range of key
-values. The syntax pieces you'll assemble yourself:
+You declare a parent table `PARTITION BY RANGE (ts)` and attach child
+partitions that each own a key range:
 
-- **Declare the parent** with a `PARTITION BY RANGE (ts)` clause on the
-  `CREATE TABLE`. Give it the same columns as `events` (`id bigint`,
-  `customer_id bigint`, `event_type text`, `payload jsonb`,
-  `ts timestamptz`). The parent holds **no rows itself**.
-- **Attach each child** with `CREATE TABLE <child> PARTITION OF
-  <parent> FOR VALUES FROM (<low>) TO (<high>)`. The bounds are a
-  half-open range — `[low, high)`, low included, high excluded — so
-  adjacent partitions share a boundary value without overlapping.
+- **Parent**: `CREATE TABLE ... PARTITION BY RANGE (ts)`, with the same
+  columns as `events` (`id bigint`, `customer_id bigint`,
+  `event_type text`, `payload jsonb`, `ts timestamptz`). It holds no rows
+  itself.
+- **Child**: `CREATE TABLE <child> PARTITION OF <parent> FOR VALUES FROM
+  (<low>) TO (<high>)`. Bounds are half-open `[low, high)`, so adjacent
+  partitions share a boundary value without overlapping.
 
-The parent holds no rows directly — every row you insert into it is
-routed, automatically, to whichever child partition's range covers that
-row's `ts`. Each partition is a completely ordinary table under the
-hood, with its own storage, and can even have its own indexes.
-
-Populate the parent from the original table with an `INSERT ... SELECT`
-out of `events`; the inserts get routed to the right child partition
-automatically.
+Rows inserted into the parent route automatically to the child whose
+range covers their `ts`. Each partition is an ordinary table with its own
+storage.
 
 ## 3. What to do
 
-In `indexes.sql`, write the partitioning DDL yourself, following the
-pieces described above: a parent table named `events_part` declared
-`PARTITION BY RANGE (ts)`; two monthly partitions named
-`events_p_2023_10` and `events_p_2023_11` covering the data's full
-range (2023-10 and 2023-11, as half-open ranges); and the
-`INSERT ... SELECT` to populate it. The partition names must start with
-`events_p_` — the gate counts scanned partitions by that prefix. (This
-is DDL/backfill, not a query — `indexes.sql` runs once, before your
-`solution.sql`, exactly like every earlier lesson's index-creation
-step; it's just heavier this time.)
+In `indexes.sql`, write the DDL:
 
-In `solution.sql`, write the same one-month query as `expected.sql`,
-but against your new partitioned table `events_part`: a `count(*)` over
-the same `ts >= '2023-11-01' AND ts < '2023-12-01'` window.
+- a parent table named **`events_part`**, `PARTITION BY RANGE (ts)`, with
+  the columns listed above;
+- two monthly partitions named **`events_p_2023_10`** and
+  **`events_p_2023_11`**, as half-open ranges covering the data's full
+  span (all of 2023-10 and 2023-11). Names must start with `events_p_` —
+  the gate counts scanned partitions by that prefix;
+- an `INSERT ... SELECT` from `events` to populate it (rows route
+  automatically).
+
+(This is one-time DDL + backfill, like every earlier `indexes.sql`, just
+heavier — it takes a few seconds.)
+
+In `solution.sql`, write the same one-month query as `expected.sql` but
+against `events_part`: a `count(*)` over
+`ts >= '2023-11-01' AND ts < '2023-12-01'`.
 
 ## 4. Partition pruning
 
-Run `EXPLAIN` on that query — the `events_part` count over the November
-window — and look at which partitions show up in the plan.
-
-Because the `WHERE` clause is a constant range that the planner can
-compare directly against each partition's declared bounds, it proves
-at planning time that `events_p_2023_10` cannot contain any matching
-row — and leaves it out of the plan entirely. Only
-`events_p_2023_11` is scanned. This is **partition pruning**, and it's
-the entire point of partitioning a table this way: a query scoped to
-one partition's range does roughly 1/N of the I/O of scanning the
-whole (unpartitioned) table, for free, with no index needed on `ts` at
-all (though you could add one per-partition for even faster access
-within a partition).
-
-Pruning is a planning-time optimization (`enable_partition_pruning`,
-on by default) — it works whenever the predicate is a comparison
-against a constant or a value known before execution starts. It's
-lost if the predicate can't be resolved until execution (e.g. some
-correlated subquery cases), so keep partition-key predicates simple
-and direct.
+`EXPLAIN` your query. Because the `WHERE` is a constant range comparable
+to each partition's declared bounds, the planner proves at plan time that
+`events_p_2023_10` can't match and drops it — only `events_p_2023_11` is
+scanned. That's **partition pruning**, the whole point: a query scoped to
+one partition's range does ~1/N of the I/O, with no index on `ts` needed.
+Pruning is on by default (`enable_partition_pruning`) and works when the
+predicate resolves before execution — keep partition-key predicates
+simple and direct.
 
 ## 5. Run it
 
 ```bash
-.venv/Scripts/pytest lessons/16_partitioning -v
+make test lessons/16_partitioning
 ```
 
-Building `events_part` and backfilling ~3,000,000 rows takes a few
-seconds — that's expected for this lesson.
+Building and backfilling `events_part` (~3,000,000 rows) takes a few
+seconds — that's expected.
 
 ## 6. The gate
 
-This lesson isn't ratio/speed-graded — it's DDL-heavy and about a
-structural property (pruning), not a timing threshold. The test:
-
-1. Runs `expected.sql` (the November count against the original,
-   unpartitioned `events`) and `indexes.sql` (builds and backfills
-   `events_part`).
-2. Runs your `solution.sql` and checks its rows match `expected.sql`
-   via `assert_rows_equal` — this fails immediately with the
-   placeholder `SELECT 1;`, since `events_part` wouldn't even need to
-   exist for that to run, and its single row obviously won't match the
-   real count.
-3. `EXPLAIN`s your `solution.sql` and walks the plan's nodes, counting
-   scan nodes (`Seq Scan` / `Index Scan` / `Index Only Scan` /
-   `Bitmap Heap Scan`) whose `Relation Name` starts with
-   `events_p_` — i.e., how many partitions actually got scanned.
-   Asserts that count is exactly **1**. If your query somehow forces a
-   scan of both partitions (e.g. a non-constant or overly broad
-   predicate), this assertion catches it even if the row count still
-   happens to match.
+Not speed-graded — it's about a structural property. The test runs
+`expected.sql` (the November count on the original `events`) and
+`indexes.sql`, checks your `solution.sql`'s rows match, then `EXPLAIN`s
+it and counts scan nodes whose relation name starts with `events_p_`.
+That count must be exactly **1** — proving pruning happened, not just
+that the total matched.
 
 ## 7. The teaching point
 
-Partitioning turns "scan everything, then filter" into "prove most of
-the data is irrelevant before touching it." It pairs naturally with
-time-series data like `events`: new partitions get created as new
-months arrive, and old partitions can be dropped (`DROP TABLE
-events_p_2023_10` — instant, since it's just removing a table, not a
-row-by-row `DELETE`) once a retention window passes, without ever
-touching an index or triggering a bulk-delete's worth of dead tuples
-(see lesson 15). The tradeoff is complexity: partition bounds must be
-maintained (often via a scheduled job that creates next month's
-partition ahead of time), and cross-partition queries (spanning both
-months) don't benefit from pruning — they still have to scan every
-partition the predicate can't rule out.
+Partitioning turns "scan everything, then filter" into "prove most of the
+data is irrelevant before touching it." It fits time-series data: new
+partitions are created as months arrive, and old ones dropped
+(`DROP TABLE events_p_2023_10` — instant, with no bulk-delete dead
+tuples; see lesson 15) once a retention window passes. The cost is
+complexity: bounds must be maintained (often a scheduled job), and
+cross-partition queries don't benefit from pruning.

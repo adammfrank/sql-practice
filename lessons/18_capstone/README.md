@@ -56,7 +56,7 @@ Techniques in play — most of the course:
 ## Run it
 
 ```bash
-.venv/Scripts/pytest lessons/18_capstone -v
+make test lessons/18_capstone
 ```
 
 ## The gate
