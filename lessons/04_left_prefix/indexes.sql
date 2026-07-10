@@ -3,4 +3,4 @@
 -- README -- see why, then add the index that actually does.
 CREATE INDEX idx_orders_cust_status ON orders (customer_id, status);
 
--- TODO: add the index that helps `WHERE status = 'shipped'`.
+CREATE index idx_orders_status on orders(status);

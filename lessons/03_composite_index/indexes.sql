@@ -1,3 +1,4 @@
 -- Add a single composite (multi-column) index that covers both
 -- predicates in the query. See README.md for why one composite index
 -- beats two single-column indexes here.
+CREATE index idx_orders_cust_status on orders(customer_id, status);

@@ -111,6 +111,14 @@ rm data/baseline.json
 **Part 6 — Capstone**
 - `18_capstone` — a slow multi-table report query; hit an aggressive target using everything above.
 
+## Interview prep — general SQL
+
+`interview_prep/` is a separate track: not index-focused, no autograder.
+You design the schema yourself, working through a sequence of
+plain-English problems (schema design, joins, normalization, subqueries,
+graph traversal via recursive CTEs, window functions) against one running
+scenario. See `interview_prep/README.md`.
+
 ## Troubleshooting
 
 - **Connection hangs for ~2 minutes on startup.** If `POSTGRES_HOST` is set
